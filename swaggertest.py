@@ -1,4 +1,4 @@
-# MaxuelGamer#1529
+#MaxuelGamer#1529
 import time
 import requests
 from selenium import webdriver
@@ -15,8 +15,11 @@ def send_message_to_discord(url):
         webhook_url = "YOUR_WEBHOOK_HERE"
         message = f"```An alert has found at```\n{url}"
 
-        requests.post(webhook_url, json={"content": message})
-
+        try:
+            response = requests.post(webhook_url, json={"content": message})
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending message to Discord: {e}")
 
 with open("sites.txt", "r") as file:
     urls = file.readlines()
@@ -26,10 +29,20 @@ for url in urls:
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(options=options)
 
-    urlfinal = url.strip()+payl
-    driver.get(urlfinal)
+    try:
+        driver = webdriver.Chrome(options=options)
+    except Exception as e:
+        print(f"Error launching Chrome: {e}")
+        continue
+
+    urlfinal = url.strip() + payl
+    try:
+        driver.get(urlfinal)
+    except Exception as e:
+        print(f"Error accessing URL: {e}")
+        driver.quit()
+        continue
 
     try:
         element = WebDriverWait(driver, 15).until(
@@ -43,5 +56,7 @@ for url in urls:
             send_message_to_discord(url)
         except:
             pass
+    except Exception as e:
+        print(f"Error locating HTML tag: {e}")
     finally:
         driver.quit()
